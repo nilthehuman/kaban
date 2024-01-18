@@ -1,0 +1,151 @@
+A bunch of informal descriptions of user stories to go by:
+[use GitPython or fall back to native git cmds if it's not available]
+[NEVER let old branches be garbage collected!]
+[use smart tab completion for task titles somehow]
+
+kaban help
+What's up, this is kaban 0.1.0, your favorite command line task manager,
+reporting for duty. Use the following commands to handle your tasks and todos:
+
+kaban init
+Don't worry, you already have a kaban repo at [...]
+
+kaban init --local
+New kaban repo initialized.
+Just a heads up: this repo will *not* be synced to GitHub unless you provide
+your GitHub credentials in [] and say `kaban autopush`.
+
+kaban add "Reload ion cannons"
+New task added at top level. If you'd prefer to move it to a bag just say
+`kaban mv mybag`.
+Autopush failed though. It looks like you haven't provided your GitHub
+credentials yet.
+
+kaban auth
+You have no username or personal access token specified in [...] yet.
+Just say `kaban user yourgithubusername` and `kaban token youraccesstoken`
+when you're ready.
+kaban user xy
+Thank you for your vote of confidence! I vow use these powers wisely.
+Don't forget to provide your personal access token as well!
+kaban token "abcefefsldfjedlg"
+Thank you for your vote of confidence! I vow use these powers wisely. 😎
+(sunglasses are b'\xf0\x9f\x98\x8e'.decode() in Python)
+kaban auth
+GitHub username and access token found in [...]. You're good to go!
+
+kaban add "Ask Ted for wifi password"
+New task added at top level. You might prefer to move it to a bag with
+`kaban mv mybag`.
+
+kaban note "It must be like capnReynolds4ever or something but I'm not sure"
+Note added to 'Ask Ted for wifi password'.
+
+kaban bag gifts
+Alright partner, new bag 'gifts' created. Time to add some tasks in it -- innit?
+kaban add mom dad Chris cat me
+(defaults to bag used last, tolerates no quotes)
+New tasks added to bag 'gifts'. Planning is half the work!
+
+kaban add work "Read emails"
+New task added to bag 'work'. Planning is half the work!
+kaban add uni "Algebra homework"
+New task added to bag 'uni'. Planning is half the work!
+
+kaban auto weekly "Water plants"
+New weekly recurring task added. Chills, you won't forget again!
+
+kaban status
+Good to see you! (No) Upcoming deadlines:
+...
+(print pretty ASCII table in color)
+
+kaban status work
+'work' bag is currently 37% done based on your estimates. Projected completion: 2024-08-21. You got this!
+
+kaban show uni
+Showing all tasks in bag 'uni':
+(print pretty ASCII table in color)
+
+Attach required time estimates:
+kaban est 12h
+(defaults to task added last)
+Time estimate for 'Algebra homework' changed.
+
+kaban undo
+(use git reset ldo)
+It's cool, no worries. Time estimate undone.
+
+kaban redo
+Sure thing, boss! Time estime redone.
+kaban undolog / kaban undohist
+
+kaban delete homework
+'homework' bag deleted. Look at all the free time you have now!
+
+kaban undo
+It's cool, no worries. Deleting 'homework' bag undone.
+
+kaban add "Learn to play bagpipes"
+(now commit on separate branch)
+New task added at top level... etc.
+
+kaban dump
+(== cat ~/.kaban/bags.yaml)
+
+kaban deadline 2025-01-01
+Deadline set for 'Learn to play bagpipes'. An important step toward clear goals!
+
+Record progress:
+kaban start "Emergency bugfix"
+Alright, let's do this! 'Emergency bugfix' in progress...
+kaban stop
+Good job, 1:03:02 logged on 'Emergency bugfix'.
+kaban done
+Hooray! Task 'Emergency bugfix' has been archived.
+
+kaban log 2h "Figure out how magnets work"
+Way to go, keep it up!
+
+kaban done 50% "Fix steampunk skyship"
+(alias for log when followed by amount)
+Good job, you're almost there!
+
+kaban done "Chinese flashcards"
+Nice!
+kaban done "Reach Mont Blanc summit"
+Nice! Bag 'hikes' is now 100% done.
+
+kaban add "Look up types of bubble tea"
+kaban add "Practice bagpipe"
+kaban add "Feed dragon"
+kaban add "Memorize pi"
+kaban add "Clear fridge"
+kaban add "Install Dvorak on piano"
+kaban add "Placate the green owl"
+kaban add "Procrastinate"
+
+kaban push
+(== switch dir and git push)
+kaban pull
+Sorry, you seem to be offline.
+kaban pull
+Your local tasks has diverged from the tasks on GitHub. Do you want to merge
+them?
+kaban pull --merge
+Local tasks updated with GitHub tasks. You're all set.
+
+kaban autopush off
+kaban noautopush
+Sure, automatic upload to GitHub disabled. Btw you can always reenable
+automatic syncing with `kaban autopush`.
+kaban autopush (on)
+Automatic upload to GitHub enabled. Let's go!
+
+kaban grep/find sleep
+personal bag: Get 7.5 hours of sleep.
+
+kaban hist
+(== git log formatted nicely)
+Here's what you've been up to lately:
+

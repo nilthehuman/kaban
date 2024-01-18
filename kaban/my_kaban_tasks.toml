@@ -1,0 +1,30 @@
+[[default]]
+title = "Feed dragon"
+recurring = 'daily'
+
+[[default]]
+title = "Reload ion cannons"
+notes = "Use vegan ions though"
+estimate = 54.321  # hours
+done = 21  # hours
+
+[[work]]
+title = "Print \"Hello world!\""
+notes = "super important, can't wait"
+estimate = 0.18
+done = 0
+
+[[gifts]]
+title = 'mom'
+
+[[gifts]]
+title = 'dad'
+
+[[gifts]]
+title = 'Chris'
+
+[[gifts]]
+title = 'cat'
+
+[[gifts]]
+title = 'me'
