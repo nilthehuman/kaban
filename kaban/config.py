@@ -1,5 +1,6 @@
 from dataclasses import dataclass, asdict
 
+from tomlkit import comment
 from tomlkit.toml_document import TOMLDocument
 from tomlkit.toml_file import TOMLFile
 
@@ -15,19 +16,19 @@ class KabanConfig:
     quiet: bool = False
 
     def load_from_file(self, filename):
-        # sic: KabanControl.__init__ may pass us an explicit None argument
+        # sic, because KabanControl.__init__ may pass us an explicit None argument
         if filename is None:
             filename = defaults.CONFIG_FILE_PATH
         toml_document = TOMLFile(filename).read()
-        for key, value in toml_document:
-            assert hasattr(self, key)
-            setattr(self, key, value)
+        for attr_name in toml_document:
+            assert hasattr(self, attr_name)
+            setattr(self, attr_name, toml_document[attr_name])
 
     def save_to_file(self, filename=defaults.CONFIG_FILE_PATH):
         toml_document = TOMLDocument()
-        for key, value in asdict(self):
-            print(key, value)
-            toml_document.append(key, value)
-        print(toml_document)
+        toml_document.add(comment('kaban config file, edit at your own risk'))
+        config_dict = asdict(self)
+        for attr_name in config_dict:
+            toml_document.append(attr_name, config_dict[attr_name])
         TOMLFile(filename).write(toml_document)
 

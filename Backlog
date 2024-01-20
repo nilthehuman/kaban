@@ -13,7 +13,7 @@ Don't worry, you already have a kaban repo at [...]
 kaban init --local
 New kaban repo initialized.
 Just a heads up: this repo will *not* be synced to GitHub unless you provide
-your GitHub credentials in [] and say `kaban autopush`.
+your GitHub credentials and say `kaban autopush`.
 
 kaban add "Reload ion cannons"
 New task added at top level. If you'd prefer to move it to a bag just say
@@ -26,10 +26,10 @@ You have no username or personal access token specified in [...] yet.
 Just say `kaban user yourgithubusername` and `kaban token youraccesstoken`
 when you're ready.
 kaban user xy
-Thank you for your vote of confidence! I vow use these powers wisely.
+Thank you for your vote of confidence! I will use these powers wisely.
 Don't forget to provide your personal access token as well!
 kaban token "abcefefsldfjedlg"
-Thank you for your vote of confidence! I vow use these powers wisely. 😎
+Thank you for your vote of confidence! I will use these powers wisely. 😎
 (sunglasses are b'\xf0\x9f\x98\x8e'.decode() in Python)
 kaban auth
 GitHub username and access token found in [...]. You're good to go!
