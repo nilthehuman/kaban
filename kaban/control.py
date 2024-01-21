@@ -25,8 +25,8 @@ def _unexpected_object(args):
     print(f"Check out `kaban help {args.command}` for a list of options.")
     raise ValueError
 
-def _unknown_option(args):
-    print(f"`{args.options}` doesn't look like a valid set of options.")
+def _unknown_options(args):
+    print(f"Sorry, I don't recognize these options: '{' '.join(args.further_args)}'.")
     print(f"`kaban help {args.command}` will hook you up if you need a refresher.")
     raise ValueError
 
@@ -50,7 +50,8 @@ class KabanControl:
         argparser.print_usage = self.help
         argparser.error = lambda _: ()
         # go ahead and parse command line arguments
-        self.args = argparser.parse_args()
+        self.args, further_args = argparser.parse_known_args()
+        self.args.further_args = further_args
 
         # find and read kaban config file
         self.config_object = KabanConfig()
@@ -121,6 +122,26 @@ class KabanControl:
             return (user)
         return None
 
+    def no_object(method):
+        def check_object(self):
+            if self.args.object is not None:
+                _unexpected_object(self.args)
+            else:
+                return method(self)
+        # make sure the wrapper inherits the docstring
+        check_object.__doc__ = method.__doc__
+        return check_object
+
+    def no_further_args(method):
+        def check_further_args(self):
+            if self.args.further_args:
+                _unknown_options(self.args)
+            else:
+                return method(self)
+        # make sure the wrapper inherits the docstring
+        check_further_args.__doc__ = method.__doc__
+        return check_further_args
+
     def with_init(method):
         def check_init(self):
             if self.init_done():
@@ -169,6 +190,8 @@ class KabanControl:
         check_creds.__doc__ = method.__doc__
         return check_creds
 
+    @no_object
+    @no_further_args
     def init(self):
         """kaban init [--dir=DIR] [--local]
         Initialize git repo in ~/.kaban/, create and commit empty TOML and config file
@@ -176,8 +199,6 @@ class KabanControl:
         --local   \tKeep task data only on this machine
         See also `kaban help config`.
         """
-        if self.args.object is not None:
-            _unexpected_object(self.args)
         if self.init_done():
             print(f"Relax, you already have a kaban repo at '{KABAN_DIR}'.")
             return True
@@ -202,6 +223,7 @@ class KabanControl:
             print("(Don't forget to run `kaban remote GIT_URL` to enable syncing.)")
         return True
 
+    @no_further_args
     @with_init
     @not_local
     def remote(self):
@@ -221,6 +243,8 @@ class KabanControl:
                 return False
         return True
 
+    @no_object
+    @no_further_args
     @with_init
     @with_remote
     def cred(self):
@@ -241,6 +265,7 @@ class KabanControl:
             return False
         return True
 
+    @no_further_args
     @with_init
     @with_remote
     def user(self):
@@ -280,6 +305,7 @@ class KabanControl:
         print("Failed, something's fishy here. Are you sure your remote URL is well-formed?")
         return False
 
+    @no_further_args
     @with_init
     @with_remote
     def token(self):
@@ -319,16 +345,35 @@ class KabanControl:
 
     @with_init
     def config(self):
-        """kaban config [--dir=DIR] [--local]
+        """kaban config [format FORMAT] [local true/false] [quiet true/false]
         Manage persistent user settings to customize kaban's behavior
-        format    \tSpecify the data serialization format kaban uses to store your data
-        quiet     \tTell kaban to stfu and print messages only in response to query commands such as 'show' or 'status'
+        format FORMAT \tSpecify the data serialization format kaban uses to store your data
+        local true    \tKeep task data on this machine only, never sync to remote
+        quiet true    \tTell kaban to stfu and print messages only in response to query commands such as 'show' or 'status'
         """
-        if self.args.object is not None:
-            _unexpected_object(self.args)
-        # create default toml file in ~/.kaban/
-        return True
+        if not self.args.further_args:
+            # querying current value
+            try:
+                value = getattr(self.config_object, self.args.object)
+                print(f"Current config value for '{self.args.object}': {value}")
+                return True
+            except AttributeError:
+                _unexpected_object(self.args)
+                return False
+        else:
+            # setting new value
+            option_name = self.args.object
+            option_type = type(getattr(self.config_object, option_name))
+            option_value = self.args.further_args[0]
+            if option_type is bool:
+                new_value = str(option_value).lower() in ['true', '1']
+            else:
+                new_value = option_type(option_value)
+            setattr(self.config_object, option_name, new_value)
+            print(f"'{option_name}' config changed to {new_value}.")
+            return True
 
+    @no_further_args
     def help(self):
         """kaban help [COMMAND]
         Print a help message about a specific command or about general usage
