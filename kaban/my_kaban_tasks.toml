@@ -1,30 +1,38 @@
 [[default]]
 title = "Feed dragon"
+date_added = 2024-02-29
 recurring = 'daily'
 
 [[default]]
 title = "Reload ion cannons"
+date_added = 2024-05-04
 notes = "Use vegan ions though"
 estimate = 54.321  # hours
 done = 21  # hours
 
 [[work]]
 title = "Print \"Hello world!\""
+date_added = 2024-01-28
 notes = "super important, can't wait"
 estimate = 0.18
 done = 0
 
 [[gifts]]
 title = 'mom'
+date_added = 2024-07-10
 
 [[gifts]]
 title = 'dad'
+date_added = 2024-07-10
 
 [[gifts]]
 title = 'Chris'
+date_added = 2024-07-10
 
 [[gifts]]
 title = 'cat'
+date_added = 2024-07-10
 
 [[gifts]]
 title = 'me'
+date_added = 2024-07-10

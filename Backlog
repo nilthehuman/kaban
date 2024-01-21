@@ -67,6 +67,10 @@ kaban show uni
 Showing all tasks in bag 'uni':
 (print pretty ASCII table in color)
 
+kaban list --sortby=date_added
+Here's a list of all tasks sorted by 'date_added':
+(...)
+
 Attach required time estimates:
 kaban est 12h
 (defaults to task added last)
@@ -105,7 +109,7 @@ kaban done
 Hooray! Task 'Emergency bugfix' has been archived.
 
 kaban log 2h "Figure out how magnets work"
-Way to go, keep it up!
+Way to go, keep it up! / Way to go, champ, keep up the flow!
 
 kaban done 50% "Fix steampunk skyship"
 (alias for log when followed by amount)

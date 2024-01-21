@@ -5,6 +5,12 @@ A git-based todo manager for personal goals, tasks and projects.
 
 Keep your todos sound and synced! Organize and track your tasks with ease!
 
+```
+$ kaban init
+New kaban repo founded at '/home/mal/.kaban'. Let's do this!
+(Don't forget to run `kaban remote GIT_URL` to enable syncing.)
+```
+
 You tend to spend the bulk of your time in the command line, right? One day you
 suddenly remember that odd job you promised you would do for your landlady, you
 might as well add it to that sprawling TODO spreadsheet you've got...
