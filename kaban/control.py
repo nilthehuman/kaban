@@ -90,6 +90,7 @@ class KabanControl:
             return False
 
     def init_done(self):
+        """Has `kaban init` been run yet?"""
         if not Path.exists(TOML_FILE_PATH):
             return False
         if self.args.local or self.config_object.local:
@@ -101,13 +102,33 @@ class KabanControl:
             except git.exc.InvalidGitRepositoryError:
                 return False
 
+    def get_creds(_self):
+        """Has the user provided their username and access token for the remote?"""
+        try:
+            url = git.Repo(KABAN_DIR).config_reader().get_value('remote "origin"', 'url')
+        except (configparser.NoOptionError, configparser.NoSectionError):
+            return None
+        # try for 'https://user:token@github.com/user/myrepo.git'
+        match = re.fullmatch(r'(\w+://)?(\w+):(gh._\w+)@[\w\./]+', url)
+        if match is not None:
+            user = match.group(2)
+            token = match.group(3)
+            return user, token
+        # maybe 'https://user@github.com/user/myrepo.git' with no token?
+        match = re.fullmatch(r'(\w+://)?(\w+)@[\w\./]+', url)
+        if match is not None:
+            user = match.group(2)
+            return (user)
+        return None
+
     def with_init(method):
         def check_init(self):
             if self.init_done():
-                method(self)
+                return method(self)
             else:
-                print("No kaban repo found at '{KABAN_DIR}'.")
+                print(f"No kaban repo found at '{KABAN_DIR}'.")
                 print("Pretty sure you need to run `kaban init` first.")
+                return False
         # make sure the wrapper inherits the docstring
         check_init.__doc__ = method.__doc__
         return check_init
@@ -118,10 +139,35 @@ class KabanControl:
                 print("Uh, that command is not available in local mode.")
                 print("You might want to go `kaban config local false` first.")
             else:
-                method(self)
+                return method(self)
         # make sure the wrapper inherits the docstring
         check_local.__doc__ = method.__doc__
         return check_local
+
+    def with_remote(method):
+        def check_remote(self):
+            try:
+                git.Repo(KABAN_DIR).config_reader().get_value('remote "origin"', 'url')
+            except (configparser.NoOptionError, configparser.NoSectionError):
+                print(f"No remote URL found in the git config of the '{KABAN_DIR}' repo.")
+                print("We can fix that right now with `kaban remote URL`, just say the word.")
+                return False
+            return method(self)
+        # make sure the wrapper inherits the docstring
+        check_remote.__doc__ = method.__doc__
+        return check_remote
+
+    def with_creds(method):
+        def check_creds(self):
+            if self.get_creds() is None:
+                print(f"No credentials found in the git config of the '{KABAN_DIR}' repo.")
+                print("Just say `kaban user USERNAME` and `kaban token TOKEN` when you're ready.")
+                return False
+            else:
+                return method(self)
+        # make sure the wrapper inherits the docstring
+        check_creds.__doc__ = method.__doc__
+        return check_creds
 
     def init(self):
         """kaban init [--dir=DIR] [--local]
@@ -153,7 +199,7 @@ class KabanControl:
             print("Just a heads up: this repo will *not* be synced to GitHub unless you provide")
             print("your GitHub credentials and say `kaban autopush`.")
         else:
-            print("(Don't forget to run `kaban remote GITHUB_URL` to enable syncing.)")
+            print("(Don't forget to run `kaban remote GIT_URL` to enable syncing.)")
         return True
 
     @with_init
@@ -174,6 +220,102 @@ class KabanControl:
                 print("No remote URL has been set.")
                 return False
         return True
+
+    @with_init
+    @with_remote
+    def cred(self):
+        """kaban cred
+        Check if username and access token have been included in the remote URL
+        See also `kaban help user` and `kaban help token`.
+        """
+        creds = self.get_creds()
+        if creds is None:
+            print("It looks like you haven't provided any credentials yet.")
+            print("See `kaban help user` and `kaban help token` about that.")
+            return False
+        try:
+            print(f"Remote username: {creds[0]}")
+            print(f"Remote access token: {creds[1]}")
+        except IndexError:
+            print("Sorry, your access token is still missing.")
+            return False
+        return True
+
+    @with_init
+    @with_remote
+    def user(self):
+        """kaban user USERNAME
+        Set username for remote repo authentication
+        USERNAME \tThe username you use to access the remote
+        See also `kaban help token`.
+        """
+        username = self.args.object
+        # TODO: turn this into a decorator too?
+        if not username:
+            print("You seem to be missing the USERNAME argument.")
+            print("See `kaban help user` for wisdom and clarity.")
+            return False
+        kaban_repo = git.Repo(KABAN_DIR)
+        url = kaban_repo.config_reader().get_value('remote "origin"', 'url')
+        new_url = None
+        # is an old username already present?
+        match = re.fullmatch(r'(\w+://)?\w+(:gh._\w+)?@([\w\./]+)', url)
+        if match is not None:
+            scheme_prefix = match.group(1) if match.group(1) else ''
+            access_token = match.group(2) if match.group(2) else ''
+            host_and_path = match.group(3)
+            new_url = scheme_prefix + username + access_token + '@' + host_and_path
+        # no credentials given yet
+        else:
+            match = re.fullmatch(r'(\w+://)?([\w\./]+)', url)
+            if match is not None:
+                scheme_prefix = match.group(1) if match.group(1) else ''
+                host_and_path = match.group(2)
+                new_url = scheme_prefix + username + '@' + host_and_path
+        if new_url is not None:
+            with kaban_repo.config_writer() as git_config:
+                git_config.set_value('remote "origin"', 'url', new_url).release()
+            print(f"Remote username set to '{username}'. Welcome aboard!")
+            return True
+        print("Failed, something's fishy here. Are you sure your remote URL is well-formed?")
+        return False
+
+    @with_init
+    @with_remote
+    def token(self):
+        """kaban token TOKEN
+        Set access token for remote repo authentication
+        TOKEN    \tA personal access token with read and write permissions
+        WARNING: you are strongly advised to use a fine-grained token constrained
+        to this one repository!
+        See also `kaban help user`.
+        """
+        access_token = self.args.object
+        # TODO: turn this into a decorator too?
+        if not self.args.object:
+            print("You seem to be missing the TOKEN argument.")
+            print("See `kaban help token` for wisdom and clarity.")
+            return False
+        if not re.match(r'gh._', access_token):
+            # token format is suspicious
+            print("Warning: your access token doesn't seem to start with the conventional 'gh*_' prefix. I hope you know what you're doing.")
+        kaban_repo = git.Repo(KABAN_DIR)
+        url = kaban_repo.config_reader().get_value('remote "origin"', 'url')
+        new_url = None
+        match = re.fullmatch(r'(\w+://)?(\w+)(:gh._\w+)?@([\w\./]+)', url)
+        if match is not None:
+            scheme_prefix = match.group(1) if match.group(1) else ''
+            username = match.group(2)
+            host_and_path = match.group(4)
+            new_url = scheme_prefix + username + ':' + access_token + '@' + host_and_path
+        if new_url is not None:
+            with kaban_repo.config_writer() as git_config:
+                git_config.set_value('remote "origin"', 'url', new_url).release()
+            print(f"Remote access token set. You should be ready to push and sleep well!")
+            print("WARNING: you are strongly advised to use a fine-grained token constrained to this one repository!")
+            return True
+        print("Failed, something's fishy here. Have you set your remote username?")
+        return False
 
     @with_init
     def config(self):
