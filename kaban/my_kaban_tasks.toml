@@ -1,6 +1,7 @@
 [[default]]
 title = "Feed dragon"
 date_added = 2024-02-29
+date_last_logged = 2024-02-29
 recurring = 'daily'
 
 [[default]]

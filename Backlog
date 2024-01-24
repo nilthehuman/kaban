@@ -17,19 +17,21 @@ your GitHub credentials and say `kaban autopush`.
 
 kaban add "Reload ion cannons"
 New task added at top level. If you'd prefer to move it to a bag just say
-`kaban mv mybag`.
+`kaban mv BAG`.
 Autopush failed though. It looks like you haven't provided your GitHub
 credentials yet.
 
-kaban auth
+kaban auth mreynolds ghc_0123456789abcdefghijklmnopqrstuvwxyz
+Thank you for your vote of confidence! I shall use these powers wisely. 😎
+kaban cred
 You have no username or personal access token specified in [...] yet.
 Just say `kaban user yourgithubusername` and `kaban token youraccesstoken`
 when you're ready.
 kaban user xy
-Thank you for your vote of confidence! I will use these powers wisely.
+Thank you for your vote of confidence! I shall use these powers wisely. 😎
 Don't forget to provide your personal access token as well!
 kaban token "abcefefsldfjedlg"
-Thank you for your vote of confidence! I will use these powers wisely. 😎
+Thank you for your vote of confidence! I shall use these powers wisely. 😎
 (sunglasses are b'\xf0\x9f\x98\x8e'.decode() in Python)
 kaban auth
 GitHub username and access token found in [...]. You're good to go!
@@ -42,10 +44,11 @@ kaban note "It must be like capnReynolds4ever or something but I'm not sure"
 Note added to 'Ask Ted for wifi password'.
 
 kaban bag gifts
-Alright partner, new bag 'gifts' created. Time to add some tasks in it -- innit?
+Alright partner, new bag 'gifts' created. Time to add some tasks -- innit?
 kaban add mom dad Chris cat me
 (defaults to bag used last, tolerates no quotes)
 New tasks added to bag 'gifts'. Planning is half the work!
+kaban edit gifts color=rainbow
 
 kaban add work "Read emails"
 New task added to bag 'work'. Planning is half the work!
@@ -78,7 +81,7 @@ Time estimate for 'Algebra homework' changed.
 
 kaban undo
 (use git reset ldo)
-It's cool, no worries. Time estimate undone.
+It's all good, no worries. Time estimate undone.
 
 kaban redo
 Sure thing, boss! Time estime redone.
@@ -88,7 +91,7 @@ kaban delete homework
 'homework' bag deleted. Look at all the free time you have now!
 
 kaban undo
-It's cool, no worries. Deleting 'homework' bag undone.
+It's all good, no worries. Deleting 'homework' bag undone.
 
 kaban add "Learn to play bagpipes"
 (now commit on separate branch)
@@ -128,6 +131,8 @@ kaban add "Clear fridge"
 kaban add "Install Dvorak on piano"
 kaban add "Placate the green owl"
 kaban add "Procrastinate"
+kaban add "Fix kaban bug"
+kaban note "It's annoying when it launches the missiles"
 
 kaban push
 (== switch dir and git push)

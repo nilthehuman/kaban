@@ -70,6 +70,7 @@ class KabanControl:
                 # guess we have a clean slate then: kaban init is yet to be run;
                 # let's TypeError on any subsequent data operation
                 self.data = None
+        print(self.data.toml_document)
 
     def _execute_command(self):
         """Find out what command the user wants to run and call the corresponding method"""
@@ -90,7 +91,7 @@ class KabanControl:
         except ValueError:
             return False
 
-    def init_done(self):
+    def _init_done(self):
         """Has `kaban init` been run yet?"""
         if not Path.exists(TOML_FILE_PATH):
             return False
@@ -103,7 +104,7 @@ class KabanControl:
             except git.exc.InvalidGitRepositoryError:
                 return False
 
-    def get_creds(_self):
+    def _get_creds():
         """Has the user provided their username and access token for the remote?"""
         try:
             url = git.Repo(KABAN_DIR).config_reader().get_value('remote "origin"', 'url')
@@ -144,7 +145,7 @@ class KabanControl:
 
     def with_init(method):
         def check_init(self):
-            if self.init_done():
+            if self._init_done():
                 return method(self)
             else:
                 print(f"No kaban repo found at '{KABAN_DIR}'.")
@@ -180,7 +181,7 @@ class KabanControl:
 
     def with_creds(method):
         def check_creds(self):
-            if self.get_creds() is None:
+            if KabanControl._get_creds() is None:
                 print(f"No credentials found in the git config of the '{KABAN_DIR}' repo.")
                 print("Just say `kaban user USERNAME` and `kaban token TOKEN` when you're ready.")
                 return False
@@ -199,7 +200,7 @@ class KabanControl:
         --local   \tKeep task data only on this machine
         See also `kaban help config`.
         """
-        if self.init_done():
+        if self._init_done():
             print(f"Relax, you already have a kaban repo at '{KABAN_DIR}'.")
             return True
         # create ~/.kaban/ directory
@@ -252,7 +253,7 @@ class KabanControl:
         Check if username and access token have been included in the remote URL
         See also `kaban help user` and `kaban help token`.
         """
-        creds = self.get_creds()
+        creds = KabanControl._get_creds()
         if creds is None:
             print("It looks like you haven't provided any credentials yet.")
             print("See `kaban help user` and `kaban help token` about that.")
@@ -337,7 +338,8 @@ class KabanControl:
         if new_url is not None:
             with kaban_repo.config_writer() as git_config:
                 git_config.set_value('remote "origin"', 'url', new_url).release()
-            print(f"Remote access token set. You should be ready to push and sleep well!")
+            #print(f"Remote access token set. You should be ready to push and sleep well!")
+            print(f"Thank you for your vote of confidence! I shall use these powers wisely. 😎")
             print("WARNING: you are strongly advised to use a fine-grained token constrained to this one repository!")
             return True
         print("Failed, something's fishy here. Have you set your remote username?")
@@ -345,10 +347,16 @@ class KabanControl:
 
     @with_init
     def config(self):
-        """kaban config [format FORMAT] [local true/false] [quiet true/false]
+        """kaban config [options...]
         Manage persistent user settings to customize kaban's behavior
-        format FORMAT \tSpecify the data serialization format kaban uses to store your data
-        local true    \tKeep task data on this machine only, never sync to remote
+        Here's the list of options (substitute 'false' for 'true' to disable an option):
+        format toml   \tSpecify the data serialization format kaban uses to store your data as TOML...
+        format yaml   \t...or YAML
+        autopush true \tPush every change you make to the remote immediately
+        autopush hour \tPush your local changes to the remote every hour...
+        autopush day  \t...or once a day
+        local true    \tKeep task data on this machine only, do not sync to remote
+        color true    \tUse color in terminal output to help you tell tasks from each other
         quiet true    \tTell kaban to stfu and print messages only in response to query commands such as 'show' or 'status'
         """
         if not self.args.further_args:
@@ -366,12 +374,31 @@ class KabanControl:
             option_type = type(getattr(self.config_object, option_name))
             option_value = self.args.further_args[0]
             if option_type is bool:
-                new_value = str(option_value).lower() in ['true', '1']
+                new_value = str(option_value).lower() in ['true', '1', 'yes', 'on']
             else:
                 new_value = option_type(option_value)
             setattr(self.config_object, option_name, new_value)
             print(f"'{option_name}' config changed to {new_value}.")
             return True
+
+    @no_object
+    @no_further_args
+    @with_init
+    def dump(self):
+        """kaban dump
+        Output TOML or YAML file where tasks are kept as-is, no formatting
+        """
+        with open(TOML_FILE_PATH, 'r', encoding='utf-8') as task_file:
+            print(task_file.read())
+
+    @with_init
+    def add(self):
+        """kaban add TASK
+        Create a new task in the current bag or at the top level if no bag is selected
+        TASK     \tThe title of your new task entry
+        See also `kaban help bag`.
+        """
+        pass
 
     @no_further_args
     def help(self):
@@ -394,6 +421,7 @@ class KabanControl:
                     method = getattr(self, methodname)
                     if callable(method) and method.__doc__ is not None:
                         # actually a method as opposed to a variable
+                        print(method.__name__)
                         docstring_second_line = method.__doc__.split('\n')[1].strip()
                         helptext += '\n  ' + methodname + '  \t' + docstring_second_line
             print(helptext)
