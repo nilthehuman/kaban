@@ -131,8 +131,8 @@ Literally nothing, really. Congratulations, you gamed the system.
 adventure against a computer that's clinically insane right about now.
 
 Major breaking changes are to be expected literally any day or more like any
-minute, but if you check back once a week or so, sooner or later you might find
-something you'll find interesting here -- and perhaps enjoy using eventually!
+minute, but if you check back every few weeks or so, sooner or later you might
+find something interesting here -- and perhaps enjoy using it eventually!
 
 ## How can I contribute?
 
