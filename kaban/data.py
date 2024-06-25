@@ -36,11 +36,11 @@ class KabanData(list):
         self.last_task = None
         self.tasks = None
 
-    def load_from_file(self, filename, format='toml'):
+    def load_from_file(self, filepath, format='toml'):
         if format == 'toml':
-            self.toml_document = TOMLFile(filename).read()
+            self.toml_document = TOMLFile(filepath).read()
         elif format == 'yaml':
-            with open(filename, 'r', encoding='utf-8') as file:
+            with open(filepath, 'r', encoding='utf-8') as file:
                 self.yaml_document = yaml.safe_load(file)
         else:
             assert False
@@ -51,12 +51,15 @@ class KabanData(list):
         except NonExistentKey:
             pass  # no top-level tasks found
         # process bags
-        for bag in self.toml_document['bags']:
-            try:
-                self.append(KabanBag(**bag))
-            except TypeError:
-                # this must be a subarray below the 'bags' array
-                print("?")
+        try:
+            for bag in self.toml_document['bags']:
+                try:
+                    self.append(KabanBag(**bag))
+                except TypeError as te:
+                    # this must be a subarray below the 'bags' array
+                    pass  # TODO
+        except NonExistentKey:
+            pass  # no bags found
         print("good so far:")
         print(self)
 

@@ -42,6 +42,7 @@ class KabanControl:
         argparser.add_argument('object', metavar='object', type=str)
         # --config is special in that it is the only option not represented in the config file
         argparser.add_argument('--config', type=str)
+        argparser.add_argument('--dir', nargs='?')
         argparser.add_argument('--local', action='store_true')
         argparser.add_argument('--merge', action='store_true')
         argparser.add_argument('--quiet', action='store_true')
@@ -53,24 +54,24 @@ class KabanControl:
         self.args, further_args = argparser.parse_known_args()
         self.args.further_args = further_args
 
+        self.paths = DEFAULT_PATHS
         # find and read kaban config file
         self.config_object = KabanConfig()
         try:
-            self.config_object.load_from_file(filename=self.args.config)
+            self.config_object.load_from_file(filepath=self.args.config)
         except FileNotFoundError:
             pass  # just use the default config
         self.data = KabanData()
         # load tasks from a YAML or TOML file if there already is one
         try:
-            self.data.load_from_file(filename=TOML_FILE_PATH, format='toml')
+            self.data.load_from_file(filepath=self.paths.toml_file_path, format='toml')
         except FileNotFoundError:
             try:
-                self.data.load_from_file(filename=YAML_FILE_PATH, format='yaml')
+                self.data.load_from_file(filepath=self.paths.yaml_file_path, format='yaml')
             except FileNotFoundError:
                 # guess we have a clean slate then: kaban init is yet to be run;
                 # let's TypeError on any subsequent data operation
                 self.data = None
-        print(self.data.toml_document)
 
     def _execute_command(self):
         """Find out what command the user wants to run and call the corresponding method"""
@@ -93,21 +94,22 @@ class KabanControl:
 
     def _init_done(self):
         """Has `kaban init` been run yet?"""
-        if not Path.exists(TOML_FILE_PATH):
+        if not Path.exists(self.paths.toml_file_path):
             return False
         if self.args.local or self.config_object.local:
+            raise Exception("local")
             return True
         else:
             try:
-                if git.Repo(KABAN_DIR):
+                if git.Repo(self.paths.kaban_dir):
                     return True
             except git.exc.InvalidGitRepositoryError:
                 return False
 
-    def _get_creds():
+    def _get_creds(self):
         """Has the user provided their username and access token for the remote?"""
         try:
-            url = git.Repo(KABAN_DIR).config_reader().get_value('remote "origin"', 'url')
+            url = git.Repo(self.paths.kaban_dir).config_reader().get_value('remote "origin"', 'url')
         except (configparser.NoOptionError, configparser.NoSectionError):
             return None
         # try for 'https://user:token@github.com/user/myrepo.git'
@@ -148,7 +150,7 @@ class KabanControl:
             if self._init_done():
                 return method(self)
             else:
-                print(f"No kaban repo found at '{KABAN_DIR}'.")
+                print(f"No kaban repo found at '{self.paths.kaban_dir}'.")
                 print("Pretty sure you need to run `kaban init` first.")
                 return False
         # make sure the wrapper inherits the docstring
@@ -169,9 +171,9 @@ class KabanControl:
     def with_remote(method):
         def check_remote(self):
             try:
-                git.Repo(KABAN_DIR).config_reader().get_value('remote "origin"', 'url')
+                git.Repo(self.paths.kaban_dir).config_reader().get_value('remote "origin"', 'url')
             except (configparser.NoOptionError, configparser.NoSectionError):
-                print(f"No remote URL found in the git config of the '{KABAN_DIR}' repo.")
+                print(f"No remote URL found in the git config of the '{self.paths.kaban_dir}' repo.")
                 print("We can fix that right now with `kaban remote URL`, just say the word.")
                 return False
             return method(self)
@@ -182,7 +184,7 @@ class KabanControl:
     def with_creds(method):
         def check_creds(self):
             if KabanControl._get_creds() is None:
-                print(f"No credentials found in the git config of the '{KABAN_DIR}' repo.")
+                print(f"No credentials found in the git config of the '{self.paths.kaban_dir}' repo.")
                 print("Just say `kaban user USERNAME` and `kaban token TOKEN` when you're ready.")
                 return False
             else:
@@ -196,27 +198,29 @@ class KabanControl:
     def init(self):
         """kaban init [--dir=DIR] [--local]
         Initialize git repo in ~/.kaban/, create and commit empty TOML and config file
-        --dir=DIR \tCreate git repository in DIR instead
+        --dir=DIR \tCreate git repository in custom DIR instead
         --local   \tKeep task data only on this machine
         See also `kaban help config`.
         """
         if self._init_done():
-            print(f"Relax, you already have a kaban repo at '{KABAN_DIR}'.")
+            print(f"Relax, you already have a kaban repo at '{self.paths.kaban_dir}'.")
             return True
+        if self.args.dir:
+            self.paths.kaban_dir = self.args.dir
         # create ~/.kaban/ directory
-        Path.mkdir(KABAN_DIR, exist_ok=True)
+        Path.mkdir(self.paths.kaban_dir, exist_ok=True)
         # create empty TOML file
-        Path.touch(TOML_FILE_PATH)
+        Path.touch(self.paths.toml_file_path)
         # create default config file
-        self.config_object.save_to_file(filename=CONFIG_FILE_PATH)
+        self.config_object.save_to_file(filepath=self.paths.config_file_path)
         # initialize local git repo and create first commit
-        kaban_repo = git.Repo.init(KABAN_DIR)
+        kaban_repo = git.Repo.init(self.paths.kaban_dir)
         # not kaban_repo.git.add(all=True) because the user might want to keep
         # other files we don't want to track in the same directory
-        kaban_repo.index.add([TOML_FILE_PATH, CONFIG_FILE_PATH])
+        kaban_repo.index.add([self.paths.toml_file_path, self.paths.config_file_path])
         kaban_repo.index.commit("Init kaban repo")
         assert not kaban_repo.is_dirty()
-        print(f"New kaban repo founded at '{KABAN_DIR}'. Let's do this!")
+        print(f"New kaban repo founded at '{self.paths.kaban_dir}'. Let's do this!")
         if self.args.local:
             print("Just a heads up: this repo will *not* be synced to GitHub unless you provide")
             print("your GitHub credentials and say `kaban autopush`.")
@@ -233,12 +237,12 @@ class KabanControl:
         URL       \tThe URL of a host you have push access to
         """
         if self.args.object is not None:
-            with git.Repo(KABAN_DIR).config_writer() as git_config:
+            with git.Repo(self.paths.kaban_dir).config_writer() as git_config:
                 git_config.set_value('remote "origin"', 'url', self.args.object).release()
             print(f"Remote URL set to '{self.args.object}'.")
         else:
             try:
-                print(git.Repo(KABAN_DIR).config_reader().get_value('remote "origin"', 'url'))
+                print(git.Repo(self.paths.kaban_dir).config_reader().get_value('remote "origin"', 'url'))
             except (configparser.NoOptionError, configparser.NoSectionError):
                 print("No remote URL has been set.")
                 return False
@@ -250,10 +254,10 @@ class KabanControl:
     @with_remote
     def cred(self):
         """kaban cred
-        Check if username and access token have been included in the remote URL
+        Check if git username and access token have been included in the remote URL
         See also `kaban help user` and `kaban help token`.
         """
-        creds = KabanControl._get_creds()
+        creds = self._get_creds()
         if creds is None:
             print("It looks like you haven't provided any credentials yet.")
             print("See `kaban help user` and `kaban help token` about that.")
@@ -271,7 +275,7 @@ class KabanControl:
     @with_remote
     def user(self):
         """kaban user USERNAME
-        Set username for remote repo authentication
+        Set git username for remote repo authentication
         USERNAME \tThe username you use to access the remote
         See also `kaban help token`.
         """
@@ -281,7 +285,7 @@ class KabanControl:
             print("You seem to be missing the USERNAME argument.")
             print("See `kaban help user` for wisdom and clarity.")
             return False
-        kaban_repo = git.Repo(KABAN_DIR)
+        kaban_repo = git.Repo(self.paths.kaban_dir)
         url = kaban_repo.config_reader().get_value('remote "origin"', 'url')
         new_url = None
         # is an old username already present?
@@ -326,7 +330,7 @@ class KabanControl:
         if not re.match(r'gh._', access_token):
             # token format is suspicious
             print("Warning: your access token doesn't seem to start with the conventional 'gh*_' prefix. I hope you know what you're doing.")
-        kaban_repo = git.Repo(KABAN_DIR)
+        kaban_repo = git.Repo(self.paths.kaban_dir)
         url = kaban_repo.config_reader().get_value('remote "origin"', 'url')
         new_url = None
         match = re.fullmatch(r'(\w+://)?(\w+)(:gh._\w+)?@([\w\./]+)', url)
@@ -388,7 +392,7 @@ class KabanControl:
         """kaban dump
         Output TOML or YAML file where tasks are kept as-is, no formatting
         """
-        with open(TOML_FILE_PATH, 'r', encoding='utf-8') as task_file:
+        with open(self.paths.toml_file_path, 'r', encoding='utf-8') as task_file:
             print(task_file.read())
 
     @with_init
@@ -398,6 +402,7 @@ class KabanControl:
         TASK     \tThe title of your new task entry
         See also `kaban help bag`.
         """
+        print("object is:", self.args.object)
         pass
 
     @no_further_args
